@@ -1,0 +1,574 @@
+{
+  "name": "Sales Call Intelligence Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "name": "Every 30 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.fireflies.ai/graphql",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.FIREFLIES_API_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"query\": \"query { transcripts(limit: 50) { id title date duration organizer_email meeting_attendees { displayName email } transcript_url summary { shorthand_bullet } sentences { text speaker_name start_time } } }\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "a1b2c3d4-0002-4000-8000-000000000002",
+      "name": "Fetch Fireflies Transcripts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [260, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst lastRun = staticData.lastRunTimestamp || 0;\nconst transcripts = $input.first().json.data.transcripts || [];\n\nconst newTranscripts = transcripts.filter(t => {\n  const tDate = parseInt(t.date || '0');\n  return tDate > lastRun;\n});\n\nstaticData.lastRunTimestamp = Math.floor(Date.now() / 1000);\n\nif (newTranscripts.length === 0) {\n  return [];\n}\n\nreturn newTranscripts.map(t => ({ json: t }));"
+      },
+      "id": "a1b2c3d4-0003-4000-8000-000000000003",
+      "name": "Filter Already Processed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 0]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "a1b2c3d4-0004-4000-8000-000000000004",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [780, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/calls?fireflies_id=eq.{{$json.id}}&select=id",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "{{$env.SUPABASE_SERVICE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.SUPABASE_SERVICE_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "a1b2c3d4-0005-4000-8000-000000000005",
+      "name": "Check Supabase Duplicates",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1040, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "condition-is-new",
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "a1b2c3d4-0006-4000-8000-000000000006",
+      "name": "Is New Transcript?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1300, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\n// Build full transcript text from sentences\nconst sentences = item.sentences || [];\nconst transcriptText = sentences.map(s => `${s.speaker_name}: ${s.text}`).join('\\n');\n\n// Extract attendees\nconst attendees = item.meeting_attendees || [];\nconst organizer = item.organizer_email || '';\n\n// Find prospect (first attendee who is not the organizer)\nconst prospect = attendees.find(a => a.email !== organizer) || attendees[0] || {};\n\n// Attempt to extract company from prospect email domain\nconst prospectEmail = prospect.email || '';\nlet company = '';\nif (prospectEmail) {\n  const domain = prospectEmail.split('@')[1] || '';\n  company = domain.split('.')[0] || '';\n  company = company.charAt(0).toUpperCase() + company.slice(1);\n}\n\nreturn [{\n  json: {\n    fireflies_id: item.id,\n    title: item.title || 'Untitled Call',\n    call_date: item.date,\n    duration_seconds: item.duration || 0,\n    organizer_email: organizer,\n    prospect_name: prospect.displayName || 'Unknown',\n    prospect_email: prospectEmail,\n    company: company,\n    transcript_url: item.transcript_url || '',\n    summary_bullets: (item.summary && item.summary.shorthand_bullet) || '',\n    transcript_text: transcriptText,\n    attendees: JSON.stringify(attendees)\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0007-4000-8000-000000000007",
+      "name": "Parse Call Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, -100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/calls",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "{{$env.SUPABASE_SERVICE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.SUPABASE_SERVICE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"fireflies_id\": \"{{ $json.fireflies_id }}\",\n  \"title\": {{ JSON.stringify($json.title) }},\n  \"call_date\": \"{{ $json.call_date }}\",\n  \"duration_seconds\": {{ $json.duration_seconds }},\n  \"organizer_email\": \"{{ $json.organizer_email }}\",\n  \"prospect_name\": {{ JSON.stringify($json.prospect_name) }},\n  \"prospect_email\": \"{{ $json.prospect_email }}\",\n  \"company\": {{ JSON.stringify($json.company) }},\n  \"transcript_url\": \"{{ $json.transcript_url }}\",\n  \"summary_bullets\": {{ JSON.stringify($json.summary_bullets) }},\n  \"transcript_text\": {{ JSON.stringify($json.transcript_text) }},\n  \"attendees\": {{ $json.attendees }}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "a1b2c3d4-0008-4000-8000-000000000008",
+      "name": "Insert Call to Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1820, -100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "{{$env.ANTHROPIC_API_KEY}}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"max_tokens\": 4096,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"You are a sales call analyst. Analyze the following sales call transcript and return a JSON object with these fields:\\n\\n- sentiment: overall sentiment (positive, neutral, negative)\\n- key_topics: array of up to 5 main topics discussed\\n- objections: array of objects with {objection, response, resolved: boolean} for each objection raised by the prospect\\n- action_items: array of strings for follow-up actions\\n- buying_signals: array of strings indicating purchase intent\\n- risk_factors: array of strings indicating deal risks\\n- next_steps: string summarizing agreed next steps\\n- deal_stage_suggestion: string (discovery, qualification, proposal, negotiation, closed_won, closed_lost)\\n- key_turning_point: string describing the most pivotal moment in the conversation\\n- competitor_mentions: array of competitor names mentioned\\n- pain_points: array of prospect pain points identified\\n- confidence_score: number 0-100 indicating likelihood of deal closing\\n\\nReturn ONLY valid JSON, no markdown or explanation.\\n\\nCall Title: {{ $json.title }}\\nProspect: {{ $json.prospect_name }} ({{ $json.company }})\\n\\nTranscript:\\n{{ $json.transcript_text }}\"\n    }\n  ]\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "a1b2c3d4-0009-4000-8000-000000000009",
+      "name": "Claude Extract Insights",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2080, -100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst callData = $('Insert Call to Supabase').first().json;\n\n// Extract the text content from Claude's response\nconst content = response.content || [];\nconst textBlock = content.find(b => b.type === 'text');\nconst rawText = textBlock ? textBlock.text : '{}';\n\n// Parse the JSON from Claude's response\nlet insights;\ntry {\n  insights = JSON.parse(rawText);\n} catch (e) {\n  // Try to extract JSON from possible markdown code blocks\n  const jsonMatch = rawText.match(/```(?:json)?\\s*([\\s\\S]*?)```/);\n  if (jsonMatch) {\n    insights = JSON.parse(jsonMatch[1].trim());\n  } else {\n    throw new Error('Failed to parse Claude response as JSON: ' + rawText.substring(0, 200));\n  }\n}\n\n// Get the call ID from the Supabase insert response\nconst callId = Array.isArray(callData) ? callData[0].id : callData.id;\n\nreturn [{\n  json: {\n    call_id: callId,\n    fireflies_id: $('Parse Call Data').first().json.fireflies_id,\n    title: $('Parse Call Data').first().json.title,\n    prospect_name: $('Parse Call Data').first().json.prospect_name,\n    company: $('Parse Call Data').first().json.company,\n    transcript_url: $('Parse Call Data').first().json.transcript_url,\n    sentiment: insights.sentiment || 'neutral',\n    key_topics: insights.key_topics || [],\n    objections: insights.objections || [],\n    action_items: insights.action_items || [],\n    buying_signals: insights.buying_signals || [],\n    risk_factors: insights.risk_factors || [],\n    next_steps: insights.next_steps || '',\n    deal_stage_suggestion: insights.deal_stage_suggestion || 'discovery',\n    key_turning_point: insights.key_turning_point || '',\n    competitor_mentions: insights.competitor_mentions || [],\n    pain_points: insights.pain_points || [],\n    confidence_score: insights.confidence_score || 0\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0010-4000-8000-000000000010",
+      "name": "Parse Claude Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2340, -100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/call_insights",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "{{$env.SUPABASE_SERVICE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.SUPABASE_SERVICE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"call_id\": \"{{ $json.call_id }}\",\n  \"sentiment\": \"{{ $json.sentiment }}\",\n  \"key_topics\": {{ JSON.stringify($json.key_topics) }},\n  \"objections\": {{ JSON.stringify($json.objections) }},\n  \"action_items\": {{ JSON.stringify($json.action_items) }},\n  \"buying_signals\": {{ JSON.stringify($json.buying_signals) }},\n  \"risk_factors\": {{ JSON.stringify($json.risk_factors) }},\n  \"next_steps\": {{ JSON.stringify($json.next_steps) }},\n  \"deal_stage_suggestion\": \"{{ $json.deal_stage_suggestion }}\",\n  \"key_turning_point\": {{ JSON.stringify($json.key_turning_point) }},\n  \"competitor_mentions\": {{ JSON.stringify($json.competitor_mentions) }},\n  \"pain_points\": {{ JSON.stringify($json.pain_points) }},\n  \"confidence_score\": {{ $json.confidence_score }}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "a1b2c3d4-0011-4000-8000-000000000011",
+      "name": "Insert Insights to Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2600, -100]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/calls?id=eq.{{$json.call_id}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "{{$env.SUPABASE_SERVICE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.SUPABASE_SERVICE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"processed_at\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0012-4000-8000-000000000012",
+      "name": "Update Call Processed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2860, -100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.SLACK_BOT_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#sales\",\n  \"text\": \":phone: *New Sales Call Analyzed*\\n\\n*Meeting:* {{ $('Parse Claude Response').first().json.title }}\\n*Prospect:* {{ $('Parse Claude Response').first().json.prospect_name }} ({{ $('Parse Claude Response').first().json.company }})\\n*Sentiment:* {{ $('Parse Claude Response').first().json.sentiment }} | *Confidence:* {{ $('Parse Claude Response').first().json.confidence_score }}%\\n*Stage:* {{ $('Parse Claude Response').first().json.deal_stage_suggestion }}\\n\\n*Key Turning Point:*\\n{{ $('Parse Claude Response').first().json.key_turning_point }}\\n\\n*Top Objections:*\\n{{ ($('Parse Claude Response').first().json.objections || []).slice(0, 3).map((o, i) => `${i + 1}. ${o.objection} — ${o.resolved ? 'Resolved' : 'Unresolved'}`).join('\\n') }}\\n\\n*Next Steps:* {{ $('Parse Claude Response').first().json.next_steps }}\\n\\n:link: <{{ $('Parse Claude Response').first().json.transcript_url }}|View Recording on Fireflies>\"\n}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0013-4000-8000-000000000013",
+      "name": "Slack Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3120, -100]
+    },
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-0014-4000-8000-000000000014",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.SLACK_BOT_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#sales\",\n  \"text\": \":rotating_light: *Sales Call Pipeline Error*\\n\\n*Workflow:* Sales Call Intelligence Pipeline\\n*Error:* {{ $json.execution.error.message }}\\n*Node:* {{ $json.execution.lastNodeExecuted }}\\n*Time:* {{ new Date().toISOString() }}\\n*Execution ID:* {{ $json.execution.id }}\\n\\nPlease check the n8n execution log for details.\"\n}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0015-4000-8000-000000000015",
+      "name": "Slack Error Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [260, 400]
+    },
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-0016-4000-8000-000000000016",
+      "name": "No Operation (Skip Duplicate)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1560, 100]
+    }
+  ],
+  "connections": {
+    "Every 30 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Fetch Fireflies Transcripts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Fireflies Transcripts": {
+      "main": [
+        [
+          {
+            "node": "Filter Already Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Already Processed": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        null,
+        [
+          {
+            "node": "Check Supabase Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Supabase Duplicates": {
+      "main": [
+        [
+          {
+            "node": "Is New Transcript?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is New Transcript?": {
+      "main": [
+        [
+          {
+            "node": "Parse Call Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation (Skip Duplicate)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Call Data": {
+      "main": [
+        [
+          {
+            "node": "Insert Call to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Call to Supabase": {
+      "main": [
+        [
+          {
+            "node": "Claude Extract Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Extract Insights": {
+      "main": [
+        [
+          {
+            "node": "Parse Claude Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Claude Response": {
+      "main": [
+        [
+          {
+            "node": "Insert Insights to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Insights to Supabase": {
+      "main": [
+        [
+          {
+            "node": "Update Call Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Call Processed": {
+      "main": [
+        [
+          {
+            "node": "Slack Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack Notification": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Operation (Skip Duplicate)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Slack Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "versionId": "1",
+  "meta": {
+    "instanceId": ""
+  },
+  "tags": [
+    {
+      "name": "sales"
+    },
+    {
+      "name": "automation"
+    }
+  ]
+}
