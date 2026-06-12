@@ -172,6 +172,134 @@ export const dataDeletionRequests = pgTable('data_deletion_requests', {
   completedAt: timestamp('completed_at', { withTimezone: true }),
 });
 
+export const mailboxCheckpoints = pgTable(
+  'mailbox_checkpoints',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    emailAccountId: uuid('email_account_id')
+      .notNull()
+      .references(() => emailAccounts.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull().default('inbox'),
+    cursor: text('cursor').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    accountKindUnique: unique('mailbox_checkpoints_account_kind_unique').on(
+      table.emailAccountId,
+      table.kind,
+    ),
+  }),
+);
+
+export const mailboxEvents = pgTable(
+  'mailbox_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    emailAccountId: uuid('email_account_id')
+      .notNull()
+      .references(() => emailAccounts.id, { onDelete: 'cascade' }),
+    historyId: text('history_id').notNull(),
+    type: text('type').notNull(),
+    providerMessageId: text('provider_message_id').notNull(),
+    processedAt: timestamp('processed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    // Duplicate Gmail history events must be idempotent.
+    dedupeUnique: unique('mailbox_events_dedupe_unique').on(
+      table.emailAccountId,
+      table.historyId,
+      table.type,
+      table.providerMessageId,
+    ),
+  }),
+);
+
+export const emailThreads = pgTable(
+  'email_threads',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    emailAccountId: uuid('email_account_id')
+      .notNull()
+      .references(() => emailAccounts.id, { onDelete: 'cascade' }),
+    providerThreadId: text('provider_thread_id').notNull(),
+    normalizedSubject: text('normalized_subject'),
+    lastMessageAt: timestamp('last_message_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    providerThreadUnique: unique('email_threads_account_provider_unique').on(
+      table.emailAccountId,
+      table.providerThreadId,
+    ),
+  }),
+);
+
+export const emailMessages = pgTable(
+  'email_messages',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    emailAccountId: uuid('email_account_id')
+      .notNull()
+      .references(() => emailAccounts.id, { onDelete: 'cascade' }),
+    threadId: uuid('thread_id')
+      .notNull()
+      .references(() => emailThreads.id, { onDelete: 'cascade' }),
+    providerMessageId: text('provider_message_id').notNull(),
+    direction: text('direction').notNull(),
+    subject: text('subject'),
+    snippet: text('snippet'),
+    // Ciphertext envelope from @echoloop/security; never plaintext.
+    bodyTextEncrypted: text('body_text_encrypted'),
+    messageIdHeader: text('message_id_header'),
+    inReplyToHeader: text('in_reply_to_header'),
+    referencesHeader: text('references_header'),
+    labels: jsonb('labels')
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    contentHash: text('content_hash'),
+    internalDate: timestamp('internal_date', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    providerMessageUnique: unique('email_messages_account_provider_unique').on(
+      table.emailAccountId,
+      table.providerMessageId,
+    ),
+    threadIdx: index('email_messages_thread_idx').on(table.threadId),
+  }),
+);
+
+export const messageParticipants = pgTable(
+  'message_participants',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    messageId: uuid('message_id')
+      .notNull()
+      .references(() => emailMessages.id, { onDelete: 'cascade' }),
+    role: text('role').notNull(),
+    address: text('address').notNull(),
+    displayName: text('display_name'),
+  },
+  (table) => ({
+    messageIdx: index('message_participants_message_idx').on(table.messageId),
+  }),
+);
+
 export const schema = {
   organizations,
   users,
@@ -182,6 +310,11 @@ export const schema = {
   jobAttempts,
   dataExportRequests,
   dataDeletionRequests,
+  mailboxCheckpoints,
+  mailboxEvents,
+  emailThreads,
+  emailMessages,
+  messageParticipants,
 };
 
 export type Schema = typeof schema;

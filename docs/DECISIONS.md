@@ -57,17 +57,6 @@ Confirmed by the user at the start of Phase 1:
 Rationale and per-option analysis were presented to and approved by the user.
 Reversible at moderate cost; committed SQL migrations remain replayable.
 
-## D-008 — Test database via PGlite; real Postgres for dev/CI-service (2026-06-12) — Default
-
-Automated tests run against **PGlite** (`@electric-sql/pglite`), real Postgres
-compiled to WASM running in-process — no server required, so the suite runs in
-the sandbox and in CI without a service container. Local development and
-production use real PostgreSQL 16 via `docker-compose.yml` and Drizzle's
-`node-postgres` driver, selected by `DATABASE_URL`. CI may additionally run the
-integration suite against a real Postgres service to validate true
-multi-connection `FOR UPDATE SKIP LOCKED` concurrency. Reversible; test-only
-infrastructure choice.
-
 ## D-005 — `docker-compose.yml` deferred to Phase 1 (2026-06-12) — Default
 
 PostgreSQL Docker configuration is a Phase 1 build item, so no
@@ -89,3 +78,41 @@ and `tests/structure/workspace.test.ts` fails if any other workspace manifest
 declares a Gmail SDK dependency (and if the ESLint rule is removed). This
 complements — and does not weaken — the prohibited-send static test (D-003).
 Reversible (additive enforcement only).
+
+## D-008 — Test database via PGlite; real Postgres for dev/CI-service (2026-06-12) — Default
+
+Automated tests run against **PGlite** (`@electric-sql/pglite`), real Postgres
+compiled to WASM running in-process — no server required, so the suite runs in
+the sandbox and in CI without a service container. Local development and
+production use real PostgreSQL 16 via `docker-compose.yml` and Drizzle's
+`node-postgres` driver, selected by `DATABASE_URL`. CI may additionally run the
+integration suite against a real Postgres service to validate true
+multi-connection `FOR UPDATE SKIP LOCKED` concurrency. Reversible; test-only
+infrastructure choice.
+
+## D-009 — Gmail OAuth scope set (2026-06-12) — Approved by user
+
+The pilot requests exactly two scopes: `gmail.readonly` + `gmail.compose`.
+No `gmail.modify` (no label management) and nothing else. Confirmed explicitly
+by the user as the stop-and-ask scope gate. The scope list is a hardcoded
+constant in `packages/gmail` (not env-configurable) so it cannot drift; any
+change is a new stop-and-ask decision. Because `gmail.compose` can technically
+authorize sending, the no-send invariant remains enforced in code (D-003), not
+by scope.
+
+## D-010 — OAuth client credentials must live outside the repo tree (2026-06-12) — User requirement
+
+The downloaded client-secret JSON is referenced via `GOOGLE_CREDENTIALS_PATH`
+(default `~/.echoloop/credentials.json`). `resolveGoogleCredentialsPath` in
+`packages/schemas` rejects any path resolving inside the repository working
+tree, so the secret cannot be committed by accident even if gitignore rules
+were bypassed. `.gitignore` additionally blocks `credentials*.json` /
+`client_secret*.json`.
+
+## D-011 — `reconnect_required` is an expected account state (2026-06-12) — User requirement
+
+While the Google consent screen is in Testing status, refresh tokens expire
+after ~7 days. Sync maps `invalid_grant` to a clean `reconnect_required`
+account status (audited), stops processing for that account, and recovers when
+the user re-runs the connect CLI. This is modeled as normal pilot behavior —
+never a crash, never a silent stall.

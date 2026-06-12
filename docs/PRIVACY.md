@@ -15,13 +15,20 @@ later phases (see `docs/STATUS.md`).
 
 ## Data categories
 
-| Category                           | Stored?            | Encrypted at rest                             |
-| ---------------------------------- | ------------------ | --------------------------------------------- |
-| OAuth tokens                       | Yes                | Yes                                           |
-| Retained email bodies              | Yes (configurable) | Yes                                           |
-| Context snapshots (correspondence) | Yes                | Yes                                           |
-| Logs                               | Yes                | Redacted (no bodies/addresses/tokens/prompts) |
-| Knowledge base / rules / evidence  | Yes                | Per security policy                           |
+| Category                           | Stored?            | Encrypted at rest                                  |
+| ---------------------------------- | ------------------ | -------------------------------------------------- |
+| OAuth tokens                       | Yes                | Yes (AES-256-GCM, implemented Phase 1/2)           |
+| Retained email bodies              | Yes (configurable) | Yes (implemented Phase 2)                          |
+| Message headers/participants       | Yes                | Plaintext (needed for pairing); redacted from logs |
+| Context snapshots (correspondence) | Yes                | Yes                                                |
+| Logs                               | Yes                | Redacted (no bodies/addresses/tokens/prompts)      |
+| Knowledge base / rules / evidence  | Yes                | Per security policy                                |
+
+As of Phase 2, the data actually stored from Gmail is: message metadata
+(subject, snippet, labels, RFC headers, timestamps), participants (addresses +
+display names), and the message body **as ciphertext only**. Baseline sync
+stores a cursor, not historical mail. Revoking access clears tokens and stops
+processing.
 
 ## Transmission to the AI provider
 

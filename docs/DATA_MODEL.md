@@ -67,9 +67,29 @@ unique; `jobs(organization_id, idempotency_key)` unique (idempotent enqueue).
 Immutable rule versions, draft↔sent uniqueness, and evidence cross-org guards
 land with their tables in later phases.
 
-Domain tables (Gmail messages/threads/drafts, context/generation, pairing,
-learning) are added by the phase that first writes them — incremental migrations
-per `docs/DECISIONS.md` D-004.
+## Implemented in Phase 2 (migration `0001`)
+
+- **`mailbox_checkpoints`** — sync cursor per account and kind (`inbox`/`sent`);
+  unique `(email_account_id, kind)`.
+- **`mailbox_events`** — durable record of Gmail history events; unique
+  `(email_account_id, history_id, type, provider_message_id)` makes duplicate
+  event delivery idempotent.
+- **`email_threads`** — unique `(email_account_id, provider_thread_id)`;
+  normalized subject for later pairing.
+- **`email_messages`** — unique `(email_account_id, provider_message_id)`;
+  direction (inbound/outbound via alias detection); `body_text_encrypted`
+  ciphertext only; RFC headers (`Message-ID`, `In-Reply-To`, `References`),
+  labels, content hash, internal date.
+- **`message_participants`** — from/to/cc participants per message (plaintext
+  addresses, required for Phase 7 pairing; always redacted from logs).
+
+`email_accounts.status` state machine: `disconnected → connected →
+reconnect_required → connected` (re-consent) or `→ revoked`
+(see `docs/GMAIL_INTEGRATION.md`).
+
+Remaining domain tables (drafts, context/generation, pairing, learning) are
+added by the phase that first writes them — incremental migrations per
+`docs/DECISIONS.md` D-004.
 
 ## Migrations policy
 

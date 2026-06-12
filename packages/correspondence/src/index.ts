@@ -1,9 +1,11 @@
 /**
  * @echoloop/correspondence
  *
- * Triage, context assembly, pairing, comparison, and learning orchestration.
- *
- * Phase 0 placeholder. No runtime behavior is implemented yet.
- * See docs/STATUS.md for what is live vs. scaffolded.
+ * Orchestration: account lifecycle, mailbox sync (Phase 2), and later triage,
+ * context assembly, pairing, comparison, and learning.
  */
 export const PACKAGE_NAME = '@echoloop/correspondence';
+
+export * from './accounts.js';
+export * from './sync.js';
+export * from './summaries.js';

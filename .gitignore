@@ -9,6 +9,9 @@ dist/
 .env
 .env.*
 !.env.example
+credentials*.json
+client_secret*.json
+*.token.json
 
 # Logs
 *.log

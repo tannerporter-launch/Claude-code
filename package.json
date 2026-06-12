@@ -18,7 +18,9 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
+    "@echoloop/correspondence": "workspace:*",
     "@echoloop/database": "workspace:*",
+    "@echoloop/gmail": "workspace:*",
     "@echoloop/jobs": "workspace:*",
     "@echoloop/schemas": "workspace:*",
     "@echoloop/security": "workspace:*",
