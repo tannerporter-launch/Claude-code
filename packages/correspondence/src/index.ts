@@ -10,3 +10,6 @@ export * from './accounts.js';
 export * from './sync.js';
 export * from './summaries.js';
 export * from './triage.js';
+export * from './knowledge.js';
+export * from './context.js';
+export * from './export.js';
