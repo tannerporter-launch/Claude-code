@@ -151,6 +151,15 @@ export class MockGmailProvider implements GmailProvider {
     throw new Error(`Mock has no draft ${draftId}`);
   }
 
+  readonly createdDrafts: { id: string; threadId: string; rawMimeBase64Url: string }[] = [];
+
+  async createDraft(input: { threadId: string; rawMimeBase64Url: string }): Promise<GmailDraftRef> {
+    this.guard('createDraft', [input.threadId]);
+    const id = `draft-${this.createdDrafts.length + 1}`;
+    this.createdDrafts.push({ id, ...input });
+    return { id, message: { id: `${id}-msg`, threadId: input.threadId } };
+  }
+
   async revoke(): Promise<void> {
     this.calls.push({ op: 'revoke', args: [] });
     this.revoked = true;
