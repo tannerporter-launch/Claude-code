@@ -4,9 +4,11 @@
   "include": ["src/**/*"],
   "exclude": ["**/*.test.ts", "dist", "node_modules"],
   "references": [
+    { "path": "../../packages/correspondence" },
     { "path": "../../packages/database" },
+    { "path": "../../packages/gmail" },
     { "path": "../../packages/jobs" },
-    { "path": "../../packages/security" },
-    { "path": "../../packages/schemas" }
+    { "path": "../../packages/schemas" },
+    { "path": "../../packages/security" }
   ]
 }

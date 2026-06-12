@@ -7,5 +7,11 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -b"
+  },
+  "dependencies": {
+    "@echoloop/schemas": "workspace:*",
+    "@echoloop/security": "workspace:*",
+    "@googleapis/gmail": "^12.0.0",
+    "google-auth-library": "^9.15.0"
   }
 }

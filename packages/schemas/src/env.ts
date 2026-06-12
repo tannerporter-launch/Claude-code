@@ -1,3 +1,6 @@
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { isAbsolute, join, resolve, sep } from 'node:path';
 import { z } from 'zod';
 
 /**
@@ -21,6 +24,7 @@ export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DATABASE_URL: z.string().url().optional(),
   ENCRYPTION_KEY: base64Key32.optional(),
+  GOOGLE_CREDENTIALS_PATH: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -45,4 +49,54 @@ export function requireDatabaseUrl(source: NodeJS.ProcessEnv = process.env): str
     throw new Error('DATABASE_URL is required but was not provided');
   }
   return env.DATABASE_URL;
+}
+
+export const DEFAULT_GOOGLE_CREDENTIALS_PATH = join(homedir(), '.echoloop', 'credentials.json');
+
+function expandHome(path: string): string {
+  if (path === '~' || path.startsWith(`~${sep}`) || path.startsWith('~/')) {
+    return join(homedir(), path.slice(1));
+  }
+  return path;
+}
+
+/**
+ * Resolve the Google OAuth client credentials path. The downloaded client
+ * secret must live OUTSIDE the repository working tree so it can never be
+ * committed by accident — a path resolving inside `repoRoot` is rejected.
+ */
+export function resolveGoogleCredentialsPath(
+  source: NodeJS.ProcessEnv = process.env,
+  repoRoot: string = process.cwd(),
+): string {
+  const env = parseEnv(source);
+  const raw = env.GOOGLE_CREDENTIALS_PATH ?? DEFAULT_GOOGLE_CREDENTIALS_PATH;
+  const path = resolve(expandHome(raw));
+
+  const root = resolve(repoRoot);
+  if (path === root || path.startsWith(root + sep)) {
+    throw new Error(
+      `GOOGLE_CREDENTIALS_PATH must resolve outside the repository (got ${path}). ` +
+        `Store the client secret somewhere like ${DEFAULT_GOOGLE_CREDENTIALS_PATH}.`,
+    );
+  }
+  if (!isAbsolute(path)) {
+    throw new Error('GOOGLE_CREDENTIALS_PATH must be an absolute path');
+  }
+  return path;
+}
+
+/** Like resolveGoogleCredentialsPath, but also requires the file to exist. */
+export function requireGoogleCredentialsPath(
+  source: NodeJS.ProcessEnv = process.env,
+  repoRoot: string = process.cwd(),
+): string {
+  const path = resolveGoogleCredentialsPath(source, repoRoot);
+  if (!existsSync(path)) {
+    throw new Error(
+      `Google OAuth client credentials not found at ${path}. Download the Desktop-app ` +
+        `client JSON from Google Cloud and place it there (never inside the repository).`,
+    );
+  }
+  return path;
 }

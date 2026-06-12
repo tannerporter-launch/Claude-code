@@ -17,10 +17,24 @@ and is tracked in `docs/STATUS.md`.
 
 ## Gmail scopes (controlled pilot)
 
-Request only what is needed to: read messages and thread history, read sent
-messages, and create/manage drafts. Do **not** request label-management scope
-unless label management is explicitly added later. Changing requested scopes is
-a STOP-and-ask decision (BUILD_BRIEF §1.2).
+Confirmed scope set (user-approved, `docs/DECISIONS.md` D-009):
+`gmail.readonly` + `gmail.compose` only — fixed as a code constant, not
+env-configurable. No label-management scope. Changing scopes is a STOP-and-ask
+decision (BUILD_BRIEF §1.2).
+
+## OAuth credential & token lifecycle (implemented, Phase 2)
+
+- The Desktop-app client JSON is referenced via `GOOGLE_CREDENTIALS_PATH` and
+  must resolve **outside the repository tree** — enforced by
+  `resolveGoogleCredentialsPath` (D-010), plus gitignore patterns for
+  `credentials*.json` / `client_secret*.json`.
+- Access/refresh tokens are stored only as AES-256-GCM ciphertext in
+  `email_accounts`; never logged (redaction by key name).
+- Refresh-token expiry/revocation (`invalid_grant`) → clean, audited
+  `reconnect_required` account state; sync stops for that account until the
+  user re-consents (D-011 — expected ~weekly while the consent screen is in
+  Testing status).
+- Revocation clears stored tokens and stops processing.
 
 ## Data at rest
 
