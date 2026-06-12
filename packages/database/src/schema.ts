@@ -477,6 +477,63 @@ export const contextSnapshots = pgTable('context_snapshots', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const generationRuns = pgTable('generation_runs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  messageId: uuid('message_id')
+    .notNull()
+    .references(() => emailMessages.id, { onDelete: 'cascade' }),
+  contextSnapshotId: uuid('context_snapshot_id').references(() => contextSnapshots.id, {
+    onDelete: 'set null',
+  }),
+  promptVersion: text('prompt_version'),
+  modelId: text('model_id'),
+  status: text('status').notNull(),
+  errorKind: text('error_kind'),
+  latencyMs: integer('latency_ms'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const generatedDrafts = pgTable('generated_drafts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  generationRunId: uuid('generation_run_id')
+    .notNull()
+    .references(() => generationRuns.id, { onDelete: 'cascade' }),
+  messageId: uuid('message_id')
+    .notNull()
+    .references(() => emailMessages.id, { onDelete: 'cascade' }),
+  threadId: uuid('thread_id')
+    .notNull()
+    .references(() => emailThreads.id, { onDelete: 'cascade' }),
+  replyMode: text('reply_mode').notNull(),
+  subject: text('subject').notNull(),
+  // Ciphertext envelope; never plaintext.
+  bodyTextEncrypted: text('body_text_encrypted').notNull(),
+  recipients: jsonb('recipients')
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  factsUsed: jsonb('facts_used')
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  rulesUsed: jsonb('rules_used')
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  commitmentsMade: jsonb('commitments_made')
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  correlationKey: text('correlation_key'),
+  status: text('status').notNull().default('preview'),
+  providerDraftId: text('provider_draft_id'),
+  providerDraftMessageId: text('provider_draft_message_id'),
+  sentMessageId: uuid('sent_message_id'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const schema = {
   organizations,
   users,
@@ -502,6 +559,8 @@ export const schema = {
   ruleEvidence,
   promptVersions,
   contextSnapshots,
+  generationRuns,
+  generatedDrafts,
 };
 
 export type Schema = typeof schema;
