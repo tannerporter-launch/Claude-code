@@ -12,7 +12,6 @@ import {
 import {
   comparisons,
   draftSentPairs,
-  emailAccounts,
   emailMessages,
   emailThreads,
   generatedDrafts,
