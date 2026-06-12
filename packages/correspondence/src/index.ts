@@ -19,3 +19,4 @@ export * from './gmailDrafts.js';
 export * from './pairing.js';
 export * from './comparison.js';
 export * from './learning.js';
+export * from './loop.js';
