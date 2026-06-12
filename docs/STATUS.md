@@ -3,86 +3,80 @@
 Authoritative record of what is **live**, **mocked**, **incomplete**, or
 **manually verified**. Update this file as part of completing every phase.
 
-_Last updated: 2026-06-12 — Phase 2._
+_Last updated: 2026-06-12 — Phase 3._
 
 ## Current phase
 
-**Phase 2 — Gmail OAuth and read-only synchronization: implemented mock-first,
-pending human review; live wiring awaits the user-run connect runbook.**
-Phases 0 (governance) and 1 (database/security foundation) are complete on
-their own PRs. Phase 3 (triage) has not started.
+**Phase 3 — Triage and context extraction: implemented mock-first, pending
+human review.** Phases 0–2 are complete on their own PRs (#2, #3, #4). Phase 4
+(knowledge base and context assembly) has not started.
 
 ## Verification
 
-- **Local verification passed** (Node 24): `pnpm install`, `pnpm run build`,
-  `pnpm run lint`, `pnpm run format:check`, `pnpm run test` (**57 tests**,
-  including all Phase 0/1 invariants and the Phase 2 acceptance suite on the
-  mock provider).
-- Integration tests run on PGlite (D-008); Gmail behavior is tested exclusively
-  against the **mock provider** (BUILD_BRIEF Phase 2 requirement).
+- **Local verification passed** (Node 24): build, lint, format, tests
+  (**73 tests**, including all earlier invariants and the Phase 3 acceptance
+  suite). Gmail behavior uses the mock provider; AI behavior uses the mock AI
+  provider — no automated test calls a live API.
 
 ## Integration reality check
 
-| Capability                      | State                           | Notes                                                                                                                      |
-| ------------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| PostgreSQL schema + migrations  | **Live (local)**                | Drizzle; 14 tables across migrations `0000`–`0001`.                                                                        |
-| Encryption / redacting logger   | **Live**                        | AES-256-GCM; key-name redaction.                                                                                           |
-| Tenant repositories + audit     | **Live (local)**                | Cross-org fails closed.                                                                                                    |
-| Durable job queue               | **Live (local)**                | `jobs`/`job_attempts`, idempotent claim.                                                                                   |
-| Gmail provider — mock           | **Mock**                        | Full read-only interface with fault injection; used by ALL automated tests.                                                |
-| Gmail provider — live           | **Code present, UNVERIFIED**    | `live.ts` + OAuth loopback flow exist; verified only when the user runs the connect runbook (`docs/GMAIL_INTEGRATION.md`). |
-| Gmail OAuth consent (real)      | **Not performed**               | User-run step; scopes fixed to `gmail.readonly` + `gmail.compose` (D-009).                                                 |
-| Mailbox sync engine             | **Implemented (mock-verified)** | Baseline, incremental, idempotent duplicates, cursor recovery, reconnect_required, revocation.                             |
-| Live Anthropic / AI integration | **None**                        | No provider, no prompts, no model calls (Phase 3+).                                                                        |
-| Web application (UI)            | **Stub only**                   | Phase 9.                                                                                                                   |
-| Draft creation / sending        | **None**                        | Provider surface is read-only in Phase 2; createDraft is Phase 6; sending is permanently out of scope.                     |
+| Capability                        | State                           | Notes                                                                                                           |
+| --------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| PostgreSQL schema + migrations    | **Live (local)**                | Drizzle; migrations `0000`–`0002` (identity/ops, mailbox, triage/contacts).                                     |
+| Encryption / redacting logger     | **Live**                        | AES-256-GCM; key-name redaction.                                                                                |
+| Durable job queue                 | **Live (local)**                | Idempotent claim on `jobs`/`job_attempts`.                                                                      |
+| Gmail provider — mock             | **Mock**                        | Read-only interface + fault injection; used by ALL automated tests.                                             |
+| Gmail provider — live             | **Code present, UNVERIFIED**    | Verified only when the user runs the connect runbook.                                                           |
+| AI provider — mock                | **Mock**                        | Scripted outputs through the same schema-validation path; used by tests.                                        |
+| AI provider — live (Anthropic)    | **Code present, UNVERIFIED**    | `packages/ai/live.ts`; activates only with the user's local API key + recorded consent.                         |
+| Triage engine                     | **Implemented (mock-verified)** | Deterministic prefilters + schema-validated classification; low confidence → manual review; failures fail safe. |
+| Synthetic triage eval set         | **Implemented**                 | Labeled counts, false positives/negatives, uncertain cases.                                                     |
+| Knowledge base / context assembly | **None**                        | Phase 4.                                                                                                        |
+| Draft generation / Gmail drafts   | **None**                        | Phases 5–6. No send path, ever.                                                                                 |
+| Web application (UI)              | **Stub only**                   | Phase 9; CLIs are the interim review surface.                                                                   |
 
-**No real Gmail consent has occurred, no AI provider exists, and nothing can
-create or send a draft.** The mock Gmail provider is a mock and is never
-represented as a live integration.
+**No live Gmail consent has been performed and no data has been transmitted to
+any model provider.** Live AI activates only when the user sets
+`ANTHROPIC_API_KEY` locally and runs `record-consent` (D-013). Nothing can
+create or send a draft.
 
 ## What exists today
 
-- **Phase 0/1:** governance, invariant tests, DB/security/jobs foundation (see
-  PR #2 and the Phase 1 PR).
-- **Phase 2:**
-  - `@echoloop/gmail`: read-only `GmailProvider` interface; fixed scope
-    constant; Desktop-app OAuth (loopback) + token refresh with
-    `invalid_grant → reconnect_required` mapping; MIME parsing + alias
-    detection; live SDK adapter (`live.ts`, unverified); mock provider with
-    fault injection.
-  - `@echoloop/correspondence`: account lifecycle (connect/baseline,
-    reconnect_required, revoke), incremental mailbox sync (idempotent events,
-    all pages, cursor-advance-after-success, controlled cursor recovery),
-    eligible-summaries query.
-  - `@echoloop/database`: migration `0001` (mailbox_checkpoints,
-    mailbox_events, email_threads, email_messages, message_participants).
-  - `apps/worker`: `gmail.sync` job handler + user-run CLIs `connect-gmail`
-    and `show-recent`.
-  - Credentials safety: `GOOGLE_CREDENTIALS_PATH` must resolve outside the
-    repo (enforced + tested); gitignore patterns for client-secret files.
+- **Phases 0–2:** governance + invariants; DB/security/jobs foundation; Gmail
+  OAuth + read-only sync (mock-first) — see PRs #2/#3/#4.
+- **Phase 3:**
+  - `@echoloop/ai`: `AiProvider` abstraction, live Anthropic adapter
+    (env-configured model IDs, D-012), mock provider; schema-validated output
+    with fail-safe rejection.
+  - `@echoloop/schemas`: triage schema covering all BUILD_BRIEF §3 dimensions;
+    AI/activation env config.
+  - `@echoloop/correspondence`: deterministic prefilters (spam/trash,
+    self-sent via alias detection, no-reply, bulk/list headers,
+    calendar/system) + AI classification with confirmed-vs-inferred
+    relationship handling and manual-review routing.
+  - `@echoloop/gmail`: bulk/calendar header detection in MIME parsing.
+  - `@echoloop/database`: migration `0002` (`message_classifications`,
+    `contacts`, `contact_relationships`; `is_bulk`/`is_calendar` flags).
+  - `@echoloop/testing`: synthetic labeled eval set + report (labeled counts,
+    FP/FN, uncertain, failed).
+  - `apps/worker`: `triage-report` and `record-consent` CLIs.
 
 ## Mocked vs. live
 
-- **MockGmailProvider** (`packages/gmail/src/mock.ts`) is the test double for
-  all Gmail behavior — explicitly a mock.
-- The live provider/OAuth code paths compile and are exercised structurally,
-  but are **unverified against real Gmail** until the user runs the runbook in
-  `docs/GMAIL_INTEGRATION.md`. They are not claimed as a working integration.
-- PGlite is real PostgreSQL (WASM), not a mock.
+- `MockGmailProvider` and `MockAiProvider` are explicit mocks; all automated
+  tests use them. PGlite is real PostgreSQL (WASM).
+- Live Gmail and live Anthropic adapters compile but are **unverified** until
+  the user runs the runbooks. They are not claimed as working integrations.
 
 ## Known gaps / not yet built
 
-Phase 3 onward: triage/classification, knowledge base, draft generation, real
-Gmail drafts (Phase 6), sent capture/pairing, comparison/learning, review UI,
-continuous worker loop, pilot. Sent-folder processing (checkpoint kind `sent`)
-is schema-ready but unused until Phase 7. Continuous polling scheduling is
-Phase 10 (Phase 2 syncs on demand / via enqueued job).
+Phases 4 onward: knowledge base/context assembly, draft generation, real Gmail
+drafts (allowlist), sent capture/pairing, comparison/learning, review UI,
+continuous worker loop, controlled pilot.
 
 ## Manual checks performed
 
-- Full local suite on Node 24 — 57 tests pass; lint/format/build green.
-- Verified the prohibited-send static test and Gmail SDK import boundary remain
-  active (no changes to `tests/invariants/`).
-- Credential scan over tracked files — no matches; `.env*` and
-  `credentials*.json` patterns git-ignored; `.env.example` placeholders only.
+- Full local suite on Node 24 — 73 tests pass; lint/format/build green.
+- Invariant tests (`tests/invariants/`) unchanged from Phase 0.
+- Credential scan over tracked files — no matches; `.env*` and client-secret
+  patterns git-ignored.

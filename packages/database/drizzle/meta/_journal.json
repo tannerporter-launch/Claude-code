@@ -15,6 +15,13 @@
       "when": 1781295350840,
       "tag": "0001_chubby_kabuki",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781296578160,
+      "tag": "0002_numerous_sunfire",
+      "breakpoints": true
     }
   ]
 }

@@ -8,3 +8,4 @@ export const PACKAGE_NAME = '@echoloop/testing';
 
 export * from './testDb.js';
 export * from './seed.js';
+export * from './triageEval.js';

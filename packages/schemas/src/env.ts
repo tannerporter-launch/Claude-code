@@ -25,6 +25,19 @@ export const envSchema = z.object({
   DATABASE_URL: z.string().url().optional(),
   ENCRYPTION_KEY: base64Key32.optional(),
   GOOGLE_CREDENTIALS_PATH: z.string().min(1).optional(),
+  ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  // Model IDs are env-configurable (never hardcoded at call sites; D-012).
+  ANTHROPIC_MODEL_CLASSIFICATION: z.string().min(1).default('claude-haiku-4-5'),
+  ANTHROPIC_MODEL_DRAFTING: z.string().min(1).default('claude-opus-4-8'),
+  ANTHROPIC_MODEL_COMPARISON: z.string().min(1).default('claude-opus-4-8'),
+  // Activation policy (BUILD_BRIEF §9). Drafting is off unless explicitly enabled.
+  ECHOLOOP_ACTIVATION_MODE: z
+    .enum(['disabled', 'dry_run', 'allowlist', 'enabled'])
+    .default('disabled'),
+  ECHOLOOP_DRAFTING_KILL_SWITCH: z
+    .string()
+    .optional()
+    .transform((value) => value !== 'false'),
 });
 
 export type Env = z.infer<typeof envSchema>;

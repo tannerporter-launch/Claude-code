@@ -26,6 +26,10 @@ export interface ParsedMessage {
   cc: ParsedParticipant[];
   bodyText: string;
   contentHash: string;
+  /** Bulk/newsletter/mailing-list signals from headers (List-Id, List-Unsubscribe, Precedence, Auto-Submitted). */
+  isBulk: boolean;
+  /** Calendar/system notification (text/calendar part present). */
+  isCalendar: boolean;
 }
 
 function headerValue(part: GmailMessagePart, name: string): string | null {
@@ -96,10 +100,29 @@ export function extractBodyText(payload: GmailMessagePart): string {
   return html ? htmlToText(html) : '';
 }
 
+function hasCalendarPart(part: GmailMessagePart): boolean {
+  if (part.mimeType === 'text/calendar' || part.mimeType === 'application/ics') return true;
+  return (part.parts ?? []).some(hasCalendarPart);
+}
+
+function detectBulk(payload: GmailMessagePart): boolean {
+  const precedence = headerValue(payload, 'Precedence')?.toLowerCase() ?? '';
+  const autoSubmitted = headerValue(payload, 'Auto-Submitted')?.toLowerCase() ?? '';
+  return (
+    headerValue(payload, 'List-Id') !== null ||
+    headerValue(payload, 'List-Unsubscribe') !== null ||
+    precedence === 'bulk' ||
+    precedence === 'list' ||
+    (autoSubmitted !== '' && autoSubmitted !== 'no')
+  );
+}
+
 export function parseGmailMessage(raw: GmailRawMessage): ParsedMessage {
   const from = parseAddressList(headerValue(raw.payload, 'From'))[0] ?? null;
   const bodyText = extractBodyText(raw.payload);
   return {
+    isBulk: detectBulk(raw.payload),
+    isCalendar: hasCalendarPart(raw.payload),
     providerMessageId: raw.id,
     providerThreadId: raw.threadId,
     labelIds: raw.labelIds ?? [],

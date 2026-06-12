@@ -102,6 +102,8 @@ async function persistMessage(
       inReplyToHeader: parsed.inReplyToHeader,
       referencesHeader: parsed.referencesHeader,
       labels: parsed.labelIds,
+      isBulk: parsed.isBulk,
+      isCalendar: parsed.isCalendar,
       contentHash: parsed.contentHash,
       internalDate: parsed.internalDate,
     })

@@ -30,13 +30,27 @@ display names), and the message body **as ciphertext only**. Baseline sync
 stores a cursor, not historical mail. Revoking access clears tokens and stops
 processing.
 
-## Transmission to the AI provider
+## Transmission to the AI provider — per-feature field list
 
-When AI features are implemented, the relevant message content and assembled
-context are transmitted to the Anthropic API to produce a draft or
-classification. This document will enumerate, per feature, exactly which fields
-are transmitted. Transmission consent is recorded. As of Phase 0 **no data is
-transmitted to any model provider** because no AI integration exists.
+User-approved (stop-and-ask gate, recorded via the `record-consent` CLI as
+audit event `ai.transmission_consented`). All model access goes through the
+provider abstraction in `packages/ai`; nothing else calls a model API.
+
+| Feature                        | Transmitted to the Anthropic API                                                                                                             | Never transmitted                                                 |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Triage (Phase 3, live-capable) | Account owner address; sender address; recipient count; confirmed-relationship hint; subject; first 8,000 chars of the inbound message body. | OAuth tokens/credentials; other mailbox content; encryption keys. |
+| Drafting (Phase 5+)            | The above plus thread history and the assembled approved playbook/knowledge slice (IDs recorded in the context snapshot).                    | Same.                                                             |
+| Comparison (Phase 8)           | The generated draft body and the final sent body for the paired exchange.                                                                    | Same.                                                             |
+
+Model IDs are env-configured (`ANTHROPIC_MODEL_*`); requests are direct API
+calls authenticated with the user's own `ANTHROPIC_API_KEY` from local `.env`.
+
+## Transmission status
+
+As of Phase 3, the AI provider abstraction and live Anthropic adapter exist;
+**no data is transmitted until the user configures `ANTHROPIC_API_KEY` locally
+and runs the consent CLI** (`node apps/worker/dist/record-consent.js`).
+Automated tests use the mock provider exclusively.
 
 ## User rights
 
