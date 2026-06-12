@@ -17,3 +17,5 @@ export * from './drafting.js';
 export * from './activation.js';
 export * from './gmailDrafts.js';
 export * from './pairing.js';
+export * from './comparison.js';
+export * from './learning.js';

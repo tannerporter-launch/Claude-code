@@ -596,6 +596,71 @@ export const draftSentPairs = pgTable(
   }),
 );
 
+export const comparisons = pgTable(
+  'comparisons',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    pairId: uuid('pair_id')
+      .notNull()
+      .references(() => draftSentPairs.id, { onDelete: 'cascade' }),
+    mechanical: jsonb('mechanical')
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    semantic: jsonb('semantic')
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    normalizedEditDistanceMilli: integer('normalized_edit_distance_milli').notNull(),
+    contextBucket: text('context_bucket').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    pairUnique: unique('comparisons_pair_unique').on(table.pairId),
+  }),
+);
+
+export const ruleProposals = pgTable('rule_proposals', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  proposalType: text('proposal_type').notNull(),
+  targetKind: text('target_kind').notNull(),
+  targetId: uuid('target_id'),
+  proposedText: text('proposed_text').notNull(),
+  scopeType: text('scope_type').notNull(),
+  scopeValue: text('scope_value'),
+  condition: jsonb('condition')
+    .notNull()
+    .default(sql`'{}'::jsonb`),
+  confidenceMilli: integer('confidence_milli').notNull(),
+  riskLevel: text('risk_level').notNull().default('low'),
+  evidenceCount: integer('evidence_count').notNull(),
+  contradictionCount: integer('contradiction_count').notNull().default(0),
+  rationale: text('rationale').notNull(),
+  status: text('status').notNull().default('pending'),
+  resultingRuleId: uuid('resulting_rule_id'),
+  reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const proposalEvidence = pgTable('proposal_evidence', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  proposalId: uuid('proposal_id')
+    .notNull()
+    .references(() => ruleProposals.id, { onDelete: 'cascade' }),
+  comparisonId: uuid('comparison_id')
+    .notNull()
+    .references(() => comparisons.id, { onDelete: 'cascade' }),
+  supports: boolean('supports').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const schema = {
   organizations,
   users,
@@ -626,6 +691,9 @@ export const schema = {
   allowlistEntries,
   pairingCandidates,
   draftSentPairs,
+  comparisons,
+  ruleProposals,
+  proposalEvidence,
 };
 
 export type Schema = typeof schema;
