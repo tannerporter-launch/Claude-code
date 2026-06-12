@@ -7,5 +7,11 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -b"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@echoloop/schemas": "workspace:*",
+    "@echoloop/security": "workspace:*",
+    "zod": "^3.24.1"
   }
 }

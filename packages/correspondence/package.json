@@ -9,6 +9,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
+    "@echoloop/ai": "workspace:*",
     "@echoloop/database": "workspace:*",
     "@echoloop/gmail": "workspace:*",
     "@echoloop/schemas": "workspace:*",

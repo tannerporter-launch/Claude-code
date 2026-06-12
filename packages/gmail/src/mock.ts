@@ -32,6 +32,8 @@ export interface MockMessageInput {
   internalDate?: number;
   messageIdHeader?: string;
   inReplyToHeader?: string;
+  /** Add a List-Unsubscribe header (newsletter/bulk simulation). */
+  listUnsubscribe?: boolean;
 }
 
 function toRaw(input: MockMessageInput): GmailRawMessage {
@@ -43,6 +45,9 @@ function toRaw(input: MockMessageInput): GmailRawMessage {
   ];
   if (input.cc) headers.push({ name: 'Cc', value: input.cc });
   if (input.inReplyToHeader) headers.push({ name: 'In-Reply-To', value: input.inReplyToHeader });
+  if (input.listUnsubscribe) {
+    headers.push({ name: 'List-Unsubscribe', value: '<mailto:unsub@example.test>' });
+  }
   return {
     id: input.id,
     threadId: input.threadId,

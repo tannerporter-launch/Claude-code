@@ -18,6 +18,7 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
+    "@echoloop/ai": "workspace:*",
     "@echoloop/correspondence": "workspace:*",
     "@echoloop/database": "workspace:*",
     "@echoloop/gmail": "workspace:*",

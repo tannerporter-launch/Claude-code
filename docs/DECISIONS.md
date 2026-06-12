@@ -116,3 +116,23 @@ after ~7 days. Sync maps `invalid_grant` to a clean `reconnect_required`
 account status (audited), stops processing for that account, and recovers when
 the user re-runs the connect CLI. This is modeled as normal pilot behavior —
 never a crash, never a silent stall.
+
+## D-012 — AI provider, model defaults, env-configured model IDs (2026-06-12) — Default
+
+All model access goes through `packages/ai` (`AiProvider`), with the official
+`@anthropic-ai/sdk`. Model IDs are env-configured, never hardcoded at call
+sites: `ANTHROPIC_MODEL_CLASSIFICATION` (default `claude-haiku-4-5` — fast,
+cost-effective triage), `ANTHROPIC_MODEL_DRAFTING` and
+`ANTHROPIC_MODEL_COMPARISON` (default `claude-opus-4-8`). Output is parsed and
+validated against a caller-supplied zod schema; failures reject the output
+whole (`AiValidationError`) and the pipeline fails safe. Reversible — swap
+models via env.
+
+## D-013 — AI transmission consent (2026-06-12) — Approved by user
+
+The user explicitly approved transmitting inbound message content, thread
+context, and approved playbook/knowledge to the Anthropic API for triage,
+drafting, and comparison (the §1.2 retention/transmission stop-and-ask gate).
+Per-feature field lists live in `docs/PRIVACY.md`; consent is recorded as the
+`ai.transmission_consented` audit event via the `record-consent` CLI before
+live use. The API key stays in the user's local `.env`.

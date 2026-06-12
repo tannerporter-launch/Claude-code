@@ -268,6 +268,8 @@ export const emailMessages = pgTable(
     labels: jsonb('labels')
       .notNull()
       .default(sql`'[]'::jsonb`),
+    isBulk: boolean('is_bulk').notNull().default(false),
+    isCalendar: boolean('is_calendar').notNull().default(false),
     contentHash: text('content_hash'),
     internalDate: timestamp('internal_date', { withTimezone: true }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -300,6 +302,61 @@ export const messageParticipants = pgTable(
   }),
 );
 
+export const contacts = pgTable(
+  'contacts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    address: text('address').notNull(),
+    domain: text('domain'),
+    displayName: text('display_name'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    orgAddressUnique: unique('contacts_org_address_unique').on(table.organizationId, table.address),
+  }),
+);
+
+export const contactRelationships = pgTable('contact_relationships', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  contactId: uuid('contact_id')
+    .notNull()
+    .references(() => contacts.id, { onDelete: 'cascade' }),
+  relationship: text('relationship').notNull(),
+  // confirmed (human-set) vs inferred (AI-suggested) — never conflated.
+  source: text('source').notNull().default('inferred'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const messageClassifications = pgTable(
+  'message_classifications',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    messageId: uuid('message_id')
+      .notNull()
+      .references(() => emailMessages.id, { onDelete: 'cascade' }),
+    status: text('status').notNull(),
+    exclusionReason: text('exclusion_reason'),
+    // Validated TriageResult JSON (schema-checked before storage); null when excluded/failed.
+    result: jsonb('result'),
+    modelId: text('model_id'),
+    promptVersion: text('prompt_version'),
+    latencyMs: integer('latency_ms'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    messageUnique: unique('message_classifications_message_unique').on(table.messageId),
+  }),
+);
+
 export const schema = {
   organizations,
   users,
@@ -315,6 +372,9 @@ export const schema = {
   emailThreads,
   emailMessages,
   messageParticipants,
+  contacts,
+  contactRelationships,
+  messageClassifications,
 };
 
 export type Schema = typeof schema;

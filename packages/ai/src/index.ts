@@ -1,9 +1,11 @@
 /**
  * @echoloop/ai
  *
- * Anthropic provider abstraction and versioned prompts.
- *
- * Phase 0 placeholder. No runtime behavior is implemented yet.
- * See docs/STATUS.md for what is live vs. scaffolded.
+ * Anthropic provider abstraction. AI output is untrusted until
+ * schema-validated; invalid output fails safe.
  */
 export const PACKAGE_NAME = '@echoloop/ai';
+
+export * from './provider.js';
+export * from './live.js';
+export * from './mock.js';
