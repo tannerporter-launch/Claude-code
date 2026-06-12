@@ -3,18 +3,19 @@
 Authoritative record of what is **live**, **mocked**, **incomplete**, or
 **manually verified**. Update this file as part of completing every phase.
 
-_Last updated: 2026-06-12 — Phase 7._
+_Last updated: 2026-06-12 — Phase 8._
 
 ## Current phase
 
-**Phase 7 — Sent capture and pairing: implemented mock-first, pending human
-review.** Phases 0–6 are complete on stacked PRs (#2–#8). Phase 8 (comparison
-and learning proposals) has not started.
+**Phase 8 — Comparison and learning proposals: implemented mock-first,
+pending human review.** Phases 0–7 are complete on stacked PRs (#2–#9). The
+loop core is feature-complete; go-live wiring (continuous worker + runbook)
+follows.
 
 ## Verification
 
 - **Local verification passed** (Node 24): build, lint, format, tests
-  (**104 tests**, including all earlier invariants and the Phase 3/4 acceptance
+  (**114 tests**, including all earlier invariants and the Phase 3/4 acceptance
   suites). Gmail behavior uses the mock provider; AI behavior uses the mock AI
   provider — no automated test calls a live API.
 
@@ -100,6 +101,19 @@ create or send a draft.
     duplicate-event idempotency; DB uniques prevent double-pairing both ways.
   - `@echoloop/database`: migration `0006` (pairing_candidates,
     draft_sent_pairs; email_messages.correlation_key_header).
+- **Phase 8:**
+  - `@echoloop/correspondence`: word-level LCS mechanical diff (insertions/
+    deletions, greeting/sign-off/subject/recipient/length changes, normalized
+    edit distance); schema-validated semantic comparison (§10.6 categories;
+    one-time flag; factual detail); evidence-controlled proposals — style
+    patterns need ≥3 supporting comparisons in the same context bucket and a
+    contradiction search, narrowest scope; FACTUAL corrections route to
+    knowledge review (threshold 1, high risk) and never become style rules;
+    commitment changes classified distinctly; approve (creates versioned rule
+    with evidence, or approved fact)/reject/defer; nothing activates
+    automatically.
+  - `@echoloop/database`: migration `0007` (comparisons, rule_proposals,
+    proposal_evidence).
 
 ## Mocked vs. live
 
@@ -110,8 +124,9 @@ create or send a draft.
 
 ## Known gaps / not yet built
 
-Phases 8 onward: comparison/learning, review UI, continuous worker loop,
-controlled pilot.
+Phase 9 (review web app), Phase 10 (continuous worker hardening), Phase 11
+(controlled pilot evidence), Phase 12 (security review). CLIs are the interim
+review surface; a minimal polling loop ships with go-live wiring.
 
 ## Manual checks performed
 

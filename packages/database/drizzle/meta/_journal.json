@@ -50,6 +50,13 @@
       "when": 1781298130874,
       "tag": "0006_ordinary_manta",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781298522569,
+      "tag": "0007_clear_madrox",
+      "breakpoints": true
     }
   ]
 }
