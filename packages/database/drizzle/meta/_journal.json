@@ -43,6 +43,13 @@
       "when": 1781297798132,
       "tag": "0005_black_may_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781298130874,
+      "tag": "0006_ordinary_manta",
+      "breakpoints": true
     }
   ]
 }

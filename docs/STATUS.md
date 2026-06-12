@@ -3,18 +3,18 @@
 Authoritative record of what is **live**, **mocked**, **incomplete**, or
 **manually verified**. Update this file as part of completing every phase.
 
-_Last updated: 2026-06-12 — Phase 6._
+_Last updated: 2026-06-12 — Phase 7._
 
 ## Current phase
 
-**Phase 6 — Gmail draft creation (allowlist-gated): implemented mock-first,
-pending human review.** Phases 0–5 are complete on stacked PRs (#2–#7). Phase 7
-(sent capture and pairing) has not started.
+**Phase 7 — Sent capture and pairing: implemented mock-first, pending human
+review.** Phases 0–6 are complete on stacked PRs (#2–#8). Phase 8 (comparison
+and learning proposals) has not started.
 
 ## Verification
 
 - **Local verification passed** (Node 24): build, lint, format, tests
-  (**95 tests**, including all earlier invariants and the Phase 3/4 acceptance
+  (**104 tests**, including all earlier invariants and the Phase 3/4 acceptance
   suites). Gmail behavior uses the mock provider; AI behavior uses the mock AI
   provider — no automated test calls a live API.
 
@@ -91,6 +91,15 @@ create or send a draft.
     preview→draft promotion with audit events for every live Gmail write.
   - `@echoloop/database`: migration `0005` (allowlist_entries;
     email_accounts.drafting_paused).
+- **Phase 7:**
+  - `@echoloop/correspondence`: pairing engine — evidence scoring across
+    correlation header (parsed + persisted), thread, In-Reply-To, normalized
+    subject, recipient overlap, time proximity (never thread alone);
+    auto-pair only above threshold with a unique winner; ambiguous cases stay
+    unpaired in a manual queue (manual pair/resolve); draft-discard detection;
+    duplicate-event idempotency; DB uniques prevent double-pairing both ways.
+  - `@echoloop/database`: migration `0006` (pairing_candidates,
+    draft_sent_pairs; email_messages.correlation_key_header).
 
 ## Mocked vs. live
 
@@ -101,8 +110,8 @@ create or send a draft.
 
 ## Known gaps / not yet built
 
-Phases 7 onward: sent capture/pairing, comparison/learning, review UI,
-continuous worker loop, controlled pilot.
+Phases 8 onward: comparison/learning, review UI, continuous worker loop,
+controlled pilot.
 
 ## Manual checks performed
 

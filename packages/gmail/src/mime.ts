@@ -26,6 +26,8 @@ export interface ParsedMessage {
   cc: ParsedParticipant[];
   bodyText: string;
   contentHash: string;
+  /** X-EchoLoop-Correlation header when present (pairing evidence). */
+  correlationKey: string | null;
   /** Bulk/newsletter/mailing-list signals from headers (List-Id, List-Unsubscribe, Precedence, Auto-Submitted). */
   isBulk: boolean;
   /** Calendar/system notification (text/calendar part present). */
@@ -121,6 +123,7 @@ export function parseGmailMessage(raw: GmailRawMessage): ParsedMessage {
   const from = parseAddressList(headerValue(raw.payload, 'From'))[0] ?? null;
   const bodyText = extractBodyText(raw.payload);
   return {
+    correlationKey: headerValue(raw.payload, 'X-EchoLoop-Correlation'),
     isBulk: detectBulk(raw.payload),
     isCalendar: hasCalendarPart(raw.payload),
     providerMessageId: raw.id,
