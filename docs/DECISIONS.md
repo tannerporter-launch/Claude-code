@@ -136,3 +136,12 @@ drafting, and comparison (the §1.2 retention/transmission stop-and-ask gate).
 Per-feature field lists live in `docs/PRIVACY.md`; consent is recorded as the
 `ai.transmission_consented` audit event via the `record-consent` CLI before
 live use. The API key stays in the user's local `.env`.
+
+## D-014 — Fact-vs-style conflict handling in context assembly (2026-06-12) — Default
+
+Approved facts always render first with an explicit precedence instruction, and
+any style rule recorded as contradicting an approved fact
+(`rules.contradicts_knowledge_id`) is excluded from assembly and listed in the
+snapshot's `excludedConflicts`. General semantic conflict _detection_ is a
+Phase 8 concern (comparison engine routes factual corrections to knowledge
+review); Phase 4 provides the enforcement mechanism. Reversible.

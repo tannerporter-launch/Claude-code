@@ -3,19 +3,19 @@
 Authoritative record of what is **live**, **mocked**, **incomplete**, or
 **manually verified**. Update this file as part of completing every phase.
 
-_Last updated: 2026-06-12 — Phase 3._
+_Last updated: 2026-06-12 — Phase 4._
 
 ## Current phase
 
-**Phase 3 — Triage and context extraction: implemented mock-first, pending
-human review.** Phases 0–2 are complete on their own PRs (#2, #3, #4). Phase 4
-(knowledge base and context assembly) has not started.
+**Phase 4 — Knowledge base and context assembly: implemented, pending human
+review.** Phases 0–3 are complete on their own stacked PRs (#2–#5). Phase 5
+(draft generation, dry-run) has not started.
 
 ## Verification
 
 - **Local verification passed** (Node 24): build, lint, format, tests
-  (**73 tests**, including all earlier invariants and the Phase 3 acceptance
-  suite). Gmail behavior uses the mock provider; AI behavior uses the mock AI
+  (**81 tests**, including all earlier invariants and the Phase 3/4 acceptance
+  suites). Gmail behavior uses the mock provider; AI behavior uses the mock AI
   provider — no automated test calls a live API.
 
 ## Integration reality check
@@ -60,6 +60,17 @@ create or send a draft.
   - `@echoloop/testing`: synthetic labeled eval set + report (labeled counts,
     FP/FN, uncertain, failed).
   - `apps/worker`: `triage-report` and `record-consent` CLIs.
+- **Phase 4:**
+  - `@echoloop/correspondence`: versioned knowledge documents (approved facts,
+    terminology, time-bound emphasis, personal style — nothing seeded), rule
+    engine with condition schema + immutable versions + rollback, layered
+    context assembly in BUILD_BRIEF §10.2 precedence (facts override style;
+    expired emphasis and fact-contradicting style rules excluded and recorded),
+    context snapshots with full provenance (IDs+versions, exclusions, prompt
+    version, model id, content hash, encrypted render), playbook export.
+  - `@echoloop/database`: migration `0003` (knowledge_documents/\_versions,
+    rules/rule_versions/rule_evidence, prompt_versions, context_snapshots).
+  - `apps/worker`: `export-playbook` CLI (Markdown + JSON snapshots).
 
 ## Mocked vs. live
 
@@ -70,9 +81,9 @@ create or send a draft.
 
 ## Known gaps / not yet built
 
-Phases 4 onward: knowledge base/context assembly, draft generation, real Gmail
-drafts (allowlist), sent capture/pairing, comparison/learning, review UI,
-continuous worker loop, controlled pilot.
+Phases 5 onward: draft generation (dry-run), real Gmail drafts (allowlist),
+sent capture/pairing, comparison/learning, review UI, continuous worker loop,
+controlled pilot.
 
 ## Manual checks performed
 

@@ -357,6 +357,126 @@ export const messageClassifications = pgTable(
   }),
 );
 
+export const knowledgeDocuments = pgTable('knowledge_documents', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  category: text('category').notNull(),
+  title: text('title').notNull(),
+  status: text('status').notNull().default('active'),
+  currentVersion: integer('current_version').notNull().default(1),
+  effectiveFrom: timestamp('effective_from', { withTimezone: true }),
+  effectiveUntil: timestamp('effective_until', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const knowledgeDocumentVersions = pgTable(
+  'knowledge_document_versions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    documentId: uuid('document_id')
+      .notNull()
+      .references(() => knowledgeDocuments.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    content: text('content').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    docVersionUnique: unique('knowledge_document_versions_unique').on(
+      table.documentId,
+      table.version,
+    ),
+  }),
+);
+
+export const rules = pgTable('rules', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  category: text('category').notNull(),
+  scopeType: text('scope_type').notNull(),
+  scopeValue: text('scope_value'),
+  status: text('status').notNull().default('active'),
+  priority: integer('priority').notNull().default(100),
+  riskLevel: text('risk_level').notNull().default('low'),
+  creationSource: text('creation_source').notNull().default('human'),
+  // A style rule recorded as contradicting an approved fact is excluded from
+  // context assembly (facts override style).
+  contradictsKnowledgeId: uuid('contradicts_knowledge_id'),
+  currentVersion: integer('current_version').notNull().default(1),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const ruleVersions = pgTable(
+  'rule_versions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ruleId: uuid('rule_id')
+      .notNull()
+      .references(() => rules.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    instruction: text('instruction').notNull(),
+    condition: jsonb('condition')
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    effectiveFrom: timestamp('effective_from', { withTimezone: true }),
+    effectiveUntil: timestamp('effective_until', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    ruleVersionUnique: unique('rule_versions_unique').on(table.ruleId, table.version),
+  }),
+);
+
+export const ruleEvidence = pgTable('rule_evidence', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  ruleId: uuid('rule_id')
+    .notNull()
+    .references(() => rules.id, { onDelete: 'cascade' }),
+  supportsRule: boolean('supports_rule').notNull().default(true),
+  summary: text('summary'),
+  comparisonId: uuid('comparison_id'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const promptVersions = pgTable(
+  'prompt_versions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
+    version: integer('version').notNull(),
+    content: text('content').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    promptVersionUnique: unique('prompt_versions_unique').on(table.name, table.version),
+  }),
+);
+
+export const contextSnapshots = pgTable('context_snapshots', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  messageId: uuid('message_id').references(() => emailMessages.id, { onDelete: 'set null' }),
+  includedRecords: jsonb('included_records')
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  excludedConflicts: jsonb('excluded_conflicts')
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  promptVersion: text('prompt_version'),
+  modelId: text('model_id'),
+  contentHash: text('content_hash').notNull(),
+  renderedEncrypted: text('rendered_encrypted'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const schema = {
   organizations,
   users,
@@ -375,6 +495,13 @@ export const schema = {
   contacts,
   contactRelationships,
   messageClassifications,
+  knowledgeDocuments,
+  knowledgeDocumentVersions,
+  rules,
+  ruleVersions,
+  ruleEvidence,
+  promptVersions,
+  contextSnapshots,
 };
 
 export type Schema = typeof schema;
