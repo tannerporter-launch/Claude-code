@@ -3,18 +3,18 @@
 Authoritative record of what is **live**, **mocked**, **incomplete**, or
 **manually verified**. Update this file as part of completing every phase.
 
-_Last updated: 2026-06-12 — Phase 5._
+_Last updated: 2026-06-12 — Phase 6._
 
 ## Current phase
 
-**Phase 5 — Draft generation in dry-run mode: implemented, pending human
-review.** Phases 0–4 are complete on stacked PRs (#2–#6). Phase 6 (real Gmail
-drafts, allowlist-gated) has not started.
+**Phase 6 — Gmail draft creation (allowlist-gated): implemented mock-first,
+pending human review.** Phases 0–5 are complete on stacked PRs (#2–#7). Phase 7
+(sent capture and pairing) has not started.
 
 ## Verification
 
 - **Local verification passed** (Node 24): build, lint, format, tests
-  (**88 tests**, including all earlier invariants and the Phase 3/4 acceptance
+  (**95 tests**, including all earlier invariants and the Phase 3/4 acceptance
   suites). Gmail behavior uses the mock provider; AI behavior uses the mock AI
   provider — no automated test calls a live API.
 
@@ -81,6 +81,16 @@ create or send a draft.
   - `@echoloop/database`: migration `0004` (generation_runs, generated_drafts).
   - `apps/worker`: `preview-draft` CLI (live, user-run; prints the preview and
     states that no Gmail draft was created).
+- **Phase 6:**
+  - `@echoloop/gmail`: `createDraft` provider operation (the ONLY Gmail write;
+    no send operation exists), RFC 2822 reply MIME with In-Reply-To/References
+    threading and the X-EchoLoop-Correlation header; mock records all writes.
+  - `@echoloop/correspondence`: activation policy (disabled/dry_run/allowlist/
+    enabled), DB-backed allowlist (sender/domain/label/thread/message), global
+    env + per-account kill switches, per-cycle and per-hour rate limits;
+    preview→draft promotion with audit events for every live Gmail write.
+  - `@echoloop/database`: migration `0005` (allowlist_entries;
+    email_accounts.drafting_paused).
 
 ## Mocked vs. live
 
@@ -91,8 +101,8 @@ create or send a draft.
 
 ## Known gaps / not yet built
 
-Phases 6 onward: real Gmail drafts (allowlist), sent capture/pairing,
-comparison/learning, review UI, continuous worker loop, controlled pilot.
+Phases 7 onward: sent capture/pairing, comparison/learning, review UI,
+continuous worker loop, controlled pilot.
 
 ## Manual checks performed
 

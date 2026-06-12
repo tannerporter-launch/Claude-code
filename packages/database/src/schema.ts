@@ -72,6 +72,8 @@ export const emailAccounts = pgTable(
     tokenExpiresAt: timestamp('token_expires_at', { withTimezone: true }),
     lastHistoryId: text('last_history_id'),
     status: text('status').notNull().default('disconnected'),
+    // Account-level drafting kill switch (BUILD_BRIEF §7.1).
+    draftingPaused: boolean('drafting_paused').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
@@ -534,6 +536,19 @@ export const generatedDrafts = pgTable('generated_drafts', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const allowlistEntries = pgTable('allowlist_entries', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  emailAccountId: uuid('email_account_id')
+    .notNull()
+    .references(() => emailAccounts.id, { onDelete: 'cascade' }),
+  kind: text('kind').notNull(),
+  value: text('value').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const schema = {
   organizations,
   users,
@@ -561,6 +576,7 @@ export const schema = {
   contextSnapshots,
   generationRuns,
   generatedDrafts,
+  allowlistEntries,
 };
 
 export type Schema = typeof schema;

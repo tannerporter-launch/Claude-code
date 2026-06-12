@@ -68,9 +68,14 @@ export interface GmailDraftRef {
   message: GmailMessageRef;
 }
 
+export interface CreateDraftInput {
+  threadId: string;
+  rawMimeBase64Url: string;
+}
+
 /**
- * Approved read-only operations (Phase 2). Later phases may add createDraft /
- * updateDraft — never any send operation.
+ * Approved operations (BUILD_BRIEF §7.1): reads plus draft creation. NEVER any
+ * send operation — enforced by the static no-send test and code review.
  */
 export interface GmailProvider {
   getProfile(): Promise<GmailProfile>;
@@ -79,6 +84,8 @@ export interface GmailProvider {
   getThread(threadId: string): Promise<GmailThread>;
   listDrafts(): Promise<GmailDraftRef[]>;
   getDraft(draftId: string): Promise<GmailDraftRef>;
+  /** Create a DRAFT in the user's mailbox. Creating is not sending. */
+  createDraft(input: CreateDraftInput): Promise<GmailDraftRef>;
   /** Revoke this connection's token with Google. */
   revoke(): Promise<void>;
 }

@@ -36,6 +36,13 @@
       "when": 1781297483460,
       "tag": "0004_stale_fabian_cortez",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781297798132,
+      "tag": "0005_black_may_parker",
+      "breakpoints": true
     }
   ]
 }

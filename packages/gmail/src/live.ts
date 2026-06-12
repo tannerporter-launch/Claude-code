@@ -128,6 +128,23 @@ export function createLiveGmailProvider(auth: OAuth2Client): GmailProvider {
       }
     },
 
+    async createDraft(input) {
+      try {
+        const { data } = await client.users.drafts.create({
+          userId,
+          requestBody: {
+            message: { threadId: input.threadId, raw: input.rawMimeBase64Url },
+          },
+        });
+        return {
+          id: data.id!,
+          message: { id: data.message!.id!, threadId: data.message!.threadId ?? input.threadId },
+        };
+      } catch (err) {
+        mapError(err);
+      }
+    },
+
     async revoke() {
       await auth.revokeCredentials().catch(() => {
         // Best effort: a token that is already invalid cannot be revoked again.
