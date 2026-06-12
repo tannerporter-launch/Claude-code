@@ -3,19 +3,20 @@
 Authoritative record of what is **live**, **mocked**, **incomplete**, or
 **manually verified**. Update this file as part of completing every phase.
 
-_Last updated: 2026-06-12 — Phase 8._
+_Last updated: 2026-06-12 — go-live wiring._
 
 ## Current phase
 
-**Phase 8 — Comparison and learning proposals: implemented mock-first,
-pending human review.** Phases 0–7 are complete on stacked PRs (#2–#9). The
-loop core is feature-complete; go-live wiring (continuous worker + runbook)
-follows.
+**Go-live wiring complete: the full loop (Phases 0–8) is feature-complete and
+verified end-to-end on mocks, with CLIs for every human-control point and a
+minimal continuous worker.** Live operation awaits the user running
+`docs/LIVE_RUNBOOK.md` on their machine. Phases 9–12 (web UI, reliability
+hardening, pilot evidence, security review) remain.
 
 ## Verification
 
 - **Local verification passed** (Node 24): build, lint, format, tests
-  (**114 tests**, including all earlier invariants and the Phase 3/4 acceptance
+  (**116 tests**, incl. a full Definition-of-Done loop test on mocks, including all earlier invariants and the Phase 3/4 acceptance
   suites). Gmail behavior uses the mock provider; AI behavior uses the mock AI
   provider — no automated test calls a live API.
 
@@ -114,6 +115,14 @@ create or send a draft.
     automatically.
   - `@echoloop/database`: migration `0007` (comparisons, rule_proposals,
     proposal_evidence).
+- **Go-live wiring:**
+  - `@echoloop/correspondence`: `runLoopCycle` — sync → triage → draft
+    (activation-policy gated per message) → pair → discard-detect → compare →
+    propose; sent capture and learning keep running while drafting is blocked.
+  - `apps/worker` CLIs: `run-worker` (minimal polling loop, graceful SIGINT —
+    Phase 10 hardening NOT built), `proposals` (list/approve/edit/reject/
+    defer/rollback-rule), `pairing-queue` (list/pair), `allowlist` (list/add).
+  - `docs/LIVE_RUNBOOK.md`: the user-run go-live script.
 
 ## Mocked vs. live
 

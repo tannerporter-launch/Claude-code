@@ -38,6 +38,7 @@ export const envSchema = z.object({
     .string()
     .optional()
     .transform((value) => value !== 'false'),
+  POLL_INTERVAL_SECONDS: z.coerce.number().int().positive().default(120),
   ECHOLOOP_MAX_DRAFTS_PER_HOUR: z.coerce.number().int().nonnegative().default(10),
   ECHOLOOP_MAX_DRAFTS_PER_CYCLE: z.coerce.number().int().nonnegative().default(3),
 });
