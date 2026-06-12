@@ -61,3 +61,13 @@ early. The canonical layout slot is reserved. Reversible.
 `apps/web` is a typed placeholder package without React/Vite wiring, because the
 review web application is a Phase 9 deliverable. Adding the framework now would
 implement a later phase early. Reversible.
+
+## D-007 — Gmail SDK import boundary enforced mechanically (2026-06-12) — Default
+
+The documentation's claim that only `packages/gmail` touches the Gmail SDK is
+now enforced two ways: an ESLint `no-restricted-imports` rule blocks
+`googleapis`/`@googleapis/*` imports everywhere except `packages/gmail/src`,
+and `tests/structure/workspace.test.ts` fails if any other workspace manifest
+declares a Gmail SDK dependency (and if the ESLint rule is removed). This
+complements — and does not weaken — the prohibited-send static test (D-003).
+Reversible (additive enforcement only).

@@ -36,6 +36,14 @@ cost, model/schema failure rate.
 - Pairing confidence is adequate.
 - The trend is not driven only by shorter messages.
 
+## Phase 3 triage evaluation
+
+The Phase 3 synthetic labeled evaluation set and dry-run reporting must
+include, per category: labeled example counts, false positives, false
+negatives, and uncertain/low-confidence cases (routed to manual review).
+Triage quality is never reported as a single accuracy number without these
+breakdowns.
+
 ## Context buckets
 
 At minimum the dimensions in BUILD_BRIEF §3: sender relationship, 1:1 vs.
