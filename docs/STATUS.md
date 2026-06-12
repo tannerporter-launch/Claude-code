@@ -3,18 +3,18 @@
 Authoritative record of what is **live**, **mocked**, **incomplete**, or
 **manually verified**. Update this file as part of completing every phase.
 
-_Last updated: 2026-06-12 — Phase 4._
+_Last updated: 2026-06-12 — Phase 5._
 
 ## Current phase
 
-**Phase 4 — Knowledge base and context assembly: implemented, pending human
-review.** Phases 0–3 are complete on their own stacked PRs (#2–#5). Phase 5
-(draft generation, dry-run) has not started.
+**Phase 5 — Draft generation in dry-run mode: implemented, pending human
+review.** Phases 0–4 are complete on stacked PRs (#2–#6). Phase 6 (real Gmail
+drafts, allowlist-gated) has not started.
 
 ## Verification
 
 - **Local verification passed** (Node 24): build, lint, format, tests
-  (**81 tests**, including all earlier invariants and the Phase 3/4 acceptance
+  (**88 tests**, including all earlier invariants and the Phase 3/4 acceptance
   suites). Gmail behavior uses the mock provider; AI behavior uses the mock AI
   provider — no automated test calls a live API.
 
@@ -71,6 +71,16 @@ create or send a draft.
   - `@echoloop/database`: migration `0003` (knowledge_documents/\_versions,
     rules/rule_versions/rule_evidence, prompt_versions, context_snapshots).
   - `apps/worker`: `export-playbook` CLI (Markdown + JSON snapshots).
+- **Phase 5:**
+  - `@echoloop/correspondence`: dry-run draft generation — drafting prompt v1,
+    schema-validated structured output, deterministic recipient calculation
+    (reply vs reply-all minus own aliases), unsupported-claim check (factsUsed/
+    rulesUsed must reference snapshot records), prohibited-commitment check,
+    full generation provenance (runs → snapshots → drafts, encrypted bodies,
+    correlation keys). Zero Gmail writes.
+  - `@echoloop/database`: migration `0004` (generation_runs, generated_drafts).
+  - `apps/worker`: `preview-draft` CLI (live, user-run; prints the preview and
+    states that no Gmail draft was created).
 
 ## Mocked vs. live
 
@@ -81,9 +91,8 @@ create or send a draft.
 
 ## Known gaps / not yet built
 
-Phases 5 onward: draft generation (dry-run), real Gmail drafts (allowlist),
-sent capture/pairing, comparison/learning, review UI, continuous worker loop,
-controlled pilot.
+Phases 6 onward: real Gmail drafts (allowlist), sent capture/pairing,
+comparison/learning, review UI, continuous worker loop, controlled pilot.
 
 ## Manual checks performed
 
