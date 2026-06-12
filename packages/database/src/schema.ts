@@ -272,6 +272,7 @@ export const emailMessages = pgTable(
       .default(sql`'[]'::jsonb`),
     isBulk: boolean('is_bulk').notNull().default(false),
     isCalendar: boolean('is_calendar').notNull().default(false),
+    correlationKeyHeader: text('correlation_key_header'),
     contentHash: text('content_hash'),
     internalDate: timestamp('internal_date', { withTimezone: true }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -549,6 +550,52 @@ export const allowlistEntries = pgTable('allowlist_entries', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const pairingCandidates = pgTable('pairing_candidates', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  sentMessageId: uuid('sent_message_id')
+    .notNull()
+    .references(() => emailMessages.id, { onDelete: 'cascade' }),
+  generatedDraftId: uuid('generated_draft_id')
+    .notNull()
+    .references(() => generatedDrafts.id, { onDelete: 'cascade' }),
+  score: integer('score_milli').notNull(),
+  evidence: jsonb('evidence')
+    .notNull()
+    .default(sql`'{}'::jsonb`),
+  status: text('status').notNull().default('pending'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const draftSentPairs = pgTable(
+  'draft_sent_pairs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    sentMessageId: uuid('sent_message_id')
+      .notNull()
+      .references(() => emailMessages.id, { onDelete: 'cascade' }),
+    generatedDraftId: uuid('generated_draft_id')
+      .notNull()
+      .references(() => generatedDrafts.id, { onDelete: 'cascade' }),
+    confidence: integer('confidence_milli').notNull(),
+    evidence: jsonb('evidence')
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    method: text('method').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    // One sent message pairs with at most one draft, and vice versa.
+    sentUnique: unique('draft_sent_pairs_sent_unique').on(table.sentMessageId),
+    draftUnique: unique('draft_sent_pairs_draft_unique').on(table.generatedDraftId),
+  }),
+);
+
 export const schema = {
   organizations,
   users,
@@ -577,6 +624,8 @@ export const schema = {
   generationRuns,
   generatedDrafts,
   allowlistEntries,
+  pairingCandidates,
+  draftSentPairs,
 };
 
 export type Schema = typeof schema;

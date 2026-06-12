@@ -104,6 +104,7 @@ async function persistMessage(
       labels: parsed.labelIds,
       isBulk: parsed.isBulk,
       isCalendar: parsed.isCalendar,
+      correlationKeyHeader: parsed.correlationKey,
       contentHash: parsed.contentHash,
       internalDate: parsed.internalDate,
     })

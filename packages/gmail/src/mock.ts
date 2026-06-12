@@ -34,6 +34,10 @@ export interface MockMessageInput {
   inReplyToHeader?: string;
   /** Add a List-Unsubscribe header (newsletter/bulk simulation). */
   listUnsubscribe?: boolean;
+  /** Add an X-EchoLoop-Correlation header (sent-draft simulation). */
+  correlationKey?: string;
+  /** Mark as a SENT message. */
+  sent?: boolean;
 }
 
 function toRaw(input: MockMessageInput): GmailRawMessage {
@@ -48,10 +52,13 @@ function toRaw(input: MockMessageInput): GmailRawMessage {
   if (input.listUnsubscribe) {
     headers.push({ name: 'List-Unsubscribe', value: '<mailto:unsub@example.test>' });
   }
+  if (input.correlationKey) {
+    headers.push({ name: 'X-EchoLoop-Correlation', value: input.correlationKey });
+  }
   return {
     id: input.id,
     threadId: input.threadId,
-    labelIds: input.labelIds ?? ['INBOX'],
+    labelIds: input.labelIds ?? (input.sent ? ['SENT'] : ['INBOX']),
     snippet: (input.bodyText ?? '').slice(0, 80),
     internalDate: String(input.internalDate ?? Date.now()),
     payload: {
@@ -143,7 +150,16 @@ export class MockGmailProvider implements GmailProvider {
 
   async listDrafts(): Promise<GmailDraftRef[]> {
     this.guard('listDrafts', []);
-    return [];
+    return this.createdDrafts
+      .filter((d) => !this.deletedDraftIds.has(d.id))
+      .map((d) => ({ id: d.id, message: { id: `${d.id}-msg`, threadId: d.threadId } }));
+  }
+
+  private deletedDraftIds = new Set<string>();
+
+  /** Simulate the user deleting (or Gmail consuming) a draft. */
+  removeDraftFromMailbox(draftId: string): void {
+    this.deletedDraftIds.add(draftId);
   }
 
   async getDraft(draftId: string): Promise<GmailDraftRef> {
