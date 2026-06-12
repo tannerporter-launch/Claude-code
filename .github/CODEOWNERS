@@ -1,0 +1,6 @@
+# The Gmail adapter is safety-critical: it must never expose a send operation.
+# Changes here require explicit human review (see docs/SECURITY.md, invariant 1.4).
+/packages/gmail/ @tannerporter-launch
+
+# Safety invariant tests must not be weakened without review.
+/tests/invariants/ @tannerporter-launch
