@@ -1,0 +1,28 @@
+# Local PostgreSQL for EchoLoop development.
+# Automated tests do NOT need this — they run against in-process PGlite
+# (see docs/DECISIONS.md D-008). This is for real local dev / manual runs.
+#
+#   docker compose up -d
+#   DATABASE_URL=postgres://echoloop:echoloop@127.0.0.1:5432/echoloop \
+#     node apps/worker/dist/migrate.js
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: echoloop-postgres
+    environment:
+      POSTGRES_USER: echoloop
+      POSTGRES_PASSWORD: echoloop
+      POSTGRES_DB: echoloop
+    ports:
+      - '5432:5432'
+    volumes:
+      - echoloop_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U echoloop -d echoloop']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  echoloop_pgdata:

@@ -1,9 +1,8 @@
 /**
  * @echoloop/jobs
  *
- * Database-backed durable job queue.
- *
- * Phase 0 placeholder. No runtime behavior is implemented yet.
- * See docs/STATUS.md for what is live vs. scaffolded.
+ * Database-backed durable job queue (jobs / job_attempts).
  */
 export const PACKAGE_NAME = '@echoloop/jobs';
+
+export * from './queue.js';

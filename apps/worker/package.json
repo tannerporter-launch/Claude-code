@@ -6,5 +6,11 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -b"
+  },
+  "dependencies": {
+    "@echoloop/database": "workspace:*",
+    "@echoloop/jobs": "workspace:*",
+    "@echoloop/security": "workspace:*",
+    "@echoloop/schemas": "workspace:*"
   }
 }

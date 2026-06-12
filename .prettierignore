@@ -3,3 +3,4 @@
 pnpm-lock.yaml
 exports/**
 docs/source-material/**
+**/drizzle/**

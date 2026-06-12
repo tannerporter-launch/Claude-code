@@ -1,9 +1,10 @@
 /**
  * @echoloop/testing
  *
- * Synthetic Gmail and AI fixtures. Never contains live inbox data.
- *
- * Phase 0 placeholder. No runtime behavior is implemented yet.
- * See docs/STATUS.md for what is live vs. scaffolded.
+ * Synthetic fixtures and the in-process test database harness. Never contains
+ * live inbox data.
  */
 export const PACKAGE_NAME = '@echoloop/testing';
+
+export * from './testDb.js';
+export * from './seed.js';

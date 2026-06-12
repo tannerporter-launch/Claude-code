@@ -39,11 +39,23 @@ pnpm install
 pnpm run build         # type-check the workspace
 pnpm run lint
 pnpm run format:check
-pnpm run test          # unit + safety invariant tests
+pnpm run test          # unit + integration + safety invariant tests
 ```
+
+Tests need no database — they run against in-process PGlite (real PostgreSQL
+compiled to WASM).
 
 Copy `.env.example` to `.env` for local configuration. Never commit `.env` or
 any real secret; user correspondence is never committed.
+
+### Local database (for real dev runs, not tests)
+
+```bash
+docker compose up -d                              # Postgres 16 on :5432
+# generate a 32-byte base64 ENCRYPTION_KEY and a DATABASE_URL in .env, then:
+pnpm --filter @echoloop/database run db:generate  # regenerate migrations (after schema changes)
+node apps/worker/dist/migrate.js                  # apply migrations (after pnpm run build)
+```
 
 ## Key documents
 
