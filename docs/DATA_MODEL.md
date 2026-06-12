@@ -50,6 +50,27 @@ start/expiration/scope/active), personal style, and conditional rules
 version, supporting + contradictory evidence, creation source, approval
 history). Unverified personal preferences are never seeded.
 
+## Implemented so far (Phase 1)
+
+Drizzle schema + one committed migration (`packages/database/drizzle/`) covering
+identity/tenancy + operations only:
+
+- **Identity/tenancy:** `organizations`, `users`, `memberships`,
+  `email_accounts` (encrypted token columns hold ciphertext, populated in
+  Phase 2).
+- **Operations:** `audit_events`, `jobs`, `job_attempts`,
+  `data_export_requests`, `data_deletion_requests`.
+
+Constraints enforced now: explicit `organization_id` + FKs on tenant rows;
+`email_accounts(provider, provider_email)` unique; `memberships(org, user)`
+unique; `jobs(organization_id, idempotency_key)` unique (idempotent enqueue).
+Immutable rule versions, draft↔sent uniqueness, and evidence cross-org guards
+land with their tables in later phases.
+
+Domain tables (Gmail messages/threads/drafts, context/generation, pairing,
+learning) are added by the phase that first writes them — incremental migrations
+per `docs/DECISIONS.md` D-004.
+
 ## Migrations policy
 
 Migrations are committed and reviewed. The final schema is implemented in

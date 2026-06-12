@@ -6,6 +6,30 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc -b",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@echoloop/schemas": "workspace:*",
+    "@echoloop/security": "workspace:*",
+    "drizzle-orm": "^0.36.4"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17",
+    "@types/pg": "^8.11.10",
+    "drizzle-kit": "^0.28.1",
+    "pg": "^8.13.1"
+  },
+  "peerDependencies": {
+    "@electric-sql/pglite": "*",
+    "pg": "*"
+  },
+  "peerDependenciesMeta": {
+    "@electric-sql/pglite": {
+      "optional": true
+    },
+    "pg": {
+      "optional": true
+    }
   }
 }

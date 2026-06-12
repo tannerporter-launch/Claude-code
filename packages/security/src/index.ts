@@ -2,8 +2,8 @@
  * @echoloop/security
  *
  * Encryption, token handling, and the redacting logger.
- *
- * Phase 0 placeholder. No runtime behavior is implemented yet.
- * See docs/STATUS.md for what is live vs. scaffolded.
  */
 export const PACKAGE_NAME = '@echoloop/security';
+
+export * from './encryption.js';
+export * from './logger.js';

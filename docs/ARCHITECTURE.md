@@ -65,3 +65,15 @@ versioned rule/knowledge update → influences later drafts.
 
 Every step records provenance; no rule activates and no email is sent without a
 human in the loop.
+
+## Persistence & jobs (implemented, Phase 1)
+
+- `@echoloop/database` uses Drizzle over PostgreSQL: a typed schema, committed
+  SQL migrations (`packages/database/drizzle/`), a migration runner, tenant-
+  scoped repositories, and the audit-event service. The shared `Database` type
+  is driver-agnostic — node-postgres for dev/prod, PGlite for tests.
+- `@echoloop/jobs` is a durable queue on `jobs`/`job_attempts` claimed with
+  `FOR UPDATE SKIP LOCKED`; enqueue is idempotent by key.
+- `apps/worker` provides a migration CLI and an inert `runOnce(db, …)` claim →
+  run → complete/fail loop. It registers no handlers and performs no Gmail/AI
+  work yet; later phases add handlers behind this seam.

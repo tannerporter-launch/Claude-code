@@ -7,5 +7,10 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -b"
+  },
+  "dependencies": {
+    "@echoloop/database": "workspace:*",
+    "@echoloop/schemas": "workspace:*",
+    "drizzle-orm": "^0.36.4"
   }
 }

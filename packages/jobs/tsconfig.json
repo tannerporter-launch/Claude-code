@@ -1,9 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src"
-  },
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
   "include": ["src/**/*"],
-  "exclude": ["**/*.test.ts", "dist", "node_modules"]
+  "exclude": ["**/*.test.ts", "dist", "node_modules"],
+  "references": [{ "path": "../database" }, { "path": "../schemas" }]
 }

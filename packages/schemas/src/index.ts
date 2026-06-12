@@ -1,9 +1,10 @@
 /**
  * @echoloop/schemas
  *
- * Runtime schema validation and shared typed contracts (AI output is untrusted until schema-validated).
- *
- * Phase 0 placeholder. No runtime behavior is implemented yet.
- * See docs/STATUS.md for what is live vs. scaffolded.
+ * Runtime schema validation and shared typed contracts. AI output and all
+ * external input are untrusted until validated here.
  */
 export const PACKAGE_NAME = '@echoloop/schemas';
+
+export * from './env.js';
+export * from './ids.js';

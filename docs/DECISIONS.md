@@ -40,15 +40,33 @@ CODEOWNERS marker on `packages/gmail/` reinforce it. The test lives under
 `tests/` so its own pattern list is not self-flagged. We do **not** rely on
 OAuth scopes alone to prevent sending.
 
-## D-004 — Deferred: ORM and durable job queue selection (2026-06-12) — Pending
+## D-004 — ORM, durable job queue, migration granularity (2026-06-12) — Approved by user
 
-The BUILD_BRIEF requires "a typed ORM with committed migrations" and "a
-database-backed durable job queue" but does not name products. These will be
-selected at the start of Phase 1 and recorded here. Current leaning (not yet
-committed): a typed query builder/ORM that emits reviewable SQL migrations.
-Because the schema and migrations carry destructive-migration risk, the final
-choice and the initial migration plan will be confirmed before Phase 1
-implementation lands.
+Confirmed by the user at the start of Phase 1:
+
+- **ORM/migrations:** Drizzle (`drizzle-orm` + `drizzle-kit`). Typed schema in
+  TypeScript; reviewable committed `.sql` migrations under
+  `packages/database/drizzle/`; no engine binary.
+- **Durable job queue:** a custom queue built on the spec's `jobs` /
+  `job_attempts` tables using `SELECT … FOR UPDATE SKIP LOCKED`. No third-party
+  queue library; full control of idempotency, audit, and kill-switch hooks.
+- **Migration granularity:** incremental per-phase. Each phase ships the
+  migration for the tables its workflow needs, ahead of that workflow. Phase 1
+  covers identity/tenancy + operations tables only (see `docs/DATA_MODEL.md`).
+
+Rationale and per-option analysis were presented to and approved by the user.
+Reversible at moderate cost; committed SQL migrations remain replayable.
+
+## D-008 — Test database via PGlite; real Postgres for dev/CI-service (2026-06-12) — Default
+
+Automated tests run against **PGlite** (`@electric-sql/pglite`), real Postgres
+compiled to WASM running in-process — no server required, so the suite runs in
+the sandbox and in CI without a service container. Local development and
+production use real PostgreSQL 16 via `docker-compose.yml` and Drizzle's
+`node-postgres` driver, selected by `DATABASE_URL`. CI may additionally run the
+integration suite against a real Postgres service to validate true
+multi-connection `FOR UPDATE SKIP LOCKED` concurrency. Reversible; test-only
+infrastructure choice.
 
 ## D-005 — `docker-compose.yml` deferred to Phase 1 (2026-06-12) — Default
 

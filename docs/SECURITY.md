@@ -30,6 +30,19 @@ a STOP-and-ask decision (BUILD_BRIEF §1.2).
 - Local encryption key supplied via environment (`ENCRYPTION_KEY`), never
   committed.
 
+**Scheme (implemented in `@echoloop/security`, Phase 1):** AES-256-GCM with a
+random 96-bit IV per value and an authentication tag. The stored envelope is
+`v1:<base64 iv>:<base64 authTag>:<base64 ciphertext>`. Decryption fails closed on
+tampering or a wrong key (the GCM tag does not verify). The 32-byte key is read
+from `ENCRYPTION_KEY` (base64); a key of the wrong length is rejected. Tests
+cover round-trip, tamper-detection, wrong-key, and key-length failures.
+
+**Log redaction (implemented):** the structured logger redacts, by key name and
+recursively, anything matching tokens, authorization, secrets, the encryption
+key, bodies/`bodyText`/raw bodies, prompts, and addresses/recipients/emails —
+before serialization. The audit-event service applies the same redaction to
+stored audit detail.
+
 ## Application surface
 
 - Local web app binds to `127.0.0.1` by default; not exposed publicly.
